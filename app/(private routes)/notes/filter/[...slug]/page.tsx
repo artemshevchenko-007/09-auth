@@ -1,5 +1,5 @@
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { fetchNotes } from '@/lib/api/clientApi';
+import { fetchNotes } from '@/lib/api/serverApi';
 import NotesClient from './Notes.client';
 import type { Metadata } from 'next';
 
@@ -16,7 +16,7 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
     openGraph: {
       title: `NoteHub`,
       description: `NoteHub is a simple and efficient application designed for managing personal notes. It helps keep your thoughts organized and accessible in one place, whether you are at home or on the go.`,
-      url: `https://08-zustand-seven-ivory.vercel.app/${activeTag}`,
+      url: `https://09-auth-sage-ten.vercel.app/${activeTag}`,
       siteName: 'NoteHub',
       images: [
         {

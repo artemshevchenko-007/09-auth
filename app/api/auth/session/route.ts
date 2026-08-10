@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { isAxiosError } from "axios";
-import { parseSetCookie } from "cookie";
 import { api } from "../../api";
+import { parse } from "cookie";
+import { isAxiosError } from "axios";
 import { logErrorResponse } from "../../_utils/utils";
 
 export async function GET() {
@@ -25,45 +25,30 @@ export async function GET() {
       const setCookie = apiRes.headers["set-cookie"];
 
       if (setCookie) {
-        const cookieArray = Array.isArray(setCookie)
-          ? setCookie
-          : [setCookie];
-
-        for (const cookieString of cookieArray) {
-          const parsed = parseSetCookie(cookieString);
+        const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+        for (const cookieStr of cookieArray) {
+          const parsed = parse(cookieStr);
 
           const options = {
-            expires: parsed.expires,
-            path: parsed.path,
-            maxAge: parsed.maxAge,
+            expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
+            path: parsed.Path,
+            maxAge: Number(parsed["Max-Age"]),
           };
 
-          if (
-            parsed.name === "accessToken" &&
-            parsed.value !== undefined
-          ) {
-            cookieStore.set("accessToken", parsed.value, options);
-          }
-
-          if (
-            parsed.name === "refreshToken" &&
-            parsed.value !== undefined
-          ) {
-            cookieStore.set("refreshToken", parsed.value, options);
-          }
+          if (parsed.accessToken)
+            cookieStore.set("accessToken", parsed.accessToken, options);
+          if (parsed.refreshToken)
+            cookieStore.set("refreshToken", parsed.refreshToken, options);
         }
-
         return NextResponse.json({ success: true }, { status: 200 });
       }
     }
-
     return NextResponse.json({ success: false }, { status: 200 });
   } catch (error) {
     if (isAxiosError(error)) {
       logErrorResponse(error.response?.data);
       return NextResponse.json({ success: false }, { status: 200 });
     }
-
     logErrorResponse({ message: (error as Error).message });
     return NextResponse.json({ success: false }, { status: 200 });
   }
