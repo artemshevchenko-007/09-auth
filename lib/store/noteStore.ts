@@ -28,3 +28,4 @@ export const useDraftStore = create<DraftNoteStore>()(
         clearDraft: () => set({draft:initialDraft})
 }), {name:'Draft-note', partialize: (state) => ({ draft: state.draft })}))
 // 
+// 
