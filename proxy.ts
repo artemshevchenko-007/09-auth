@@ -7,28 +7,39 @@ import { checkSession } from './lib/api/serverApi';
 const privateRoutes = ['/profile', '/notes'];
 const publicRoutes = ['/sign-in', '/sign-up'];
 
-const setServerCookies = (response: NextResponse, axiosRes: AxiosResponse): boolean => {
+const setServerCookies = (
+  response: NextResponse,
+  axiosRes: AxiosResponse
+): boolean => {
   const setCookie = axiosRes.headers['set-cookie'];
+
   if (!setCookie) return false;
 
   const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+
   for (const cookieStr of cookieArray) {
     const parsed = parseSetCookie(cookieStr);
-    const options = {
+
+    response.cookies.set(parsed.name, parsed.value, {
       expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
       path: parsed.Path || '/',
       maxAge: parsed['Max-Age'] ? Number(parsed['Max-Age']) : undefined,
-    };
-    if (parsed.accessToken) response.cookies.set('accessToken', parsed.accessToken, options);
-    if (parsed.refreshToken) response.cookies.set('refreshToken', parsed.refreshToken, options);
+    });
   }
+
   return true;
 };
 
 export async function proxy(req: NextRequest) {
   const { pathname, origin } = req.nextUrl;
-  const isPrivate = privateRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
-  const isPublic = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
+
+  const isPrivate = privateRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + '/')
+  );
+
+  const isPublic = publicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + '/')
+  );
 
   const cookiesStore = await cookies();
   const accessToken = cookiesStore.get('accessToken')?.value;
@@ -39,14 +50,23 @@ export async function proxy(req: NextRequest) {
       if (refreshToken) {
         try {
           const authRes = await checkSession();
-          const response = NextResponse.next({ headers: { Cookie: cookiesStore.toString() } });
+
+          const response = NextResponse.next({
+            headers: {
+              Cookie: cookiesStore.toString(),
+            },
+          });
+
           const isAuth = setServerCookies(response, authRes);
+
           if (isAuth) return response;
+
           return NextResponse.redirect(new URL('/sign-in', origin));
         } catch {
           return NextResponse.redirect(new URL('/sign-in', origin));
         }
       }
+
       return NextResponse.redirect(new URL('/sign-in', origin));
     }
   }
@@ -55,14 +75,21 @@ export async function proxy(req: NextRequest) {
     if (accessToken) {
       return NextResponse.redirect(new URL('/', origin));
     }
+
     if (refreshToken) {
       try {
         const authRes = await checkSession();
+
         const response = NextResponse.redirect(new URL('/', origin), {
-          headers: { Cookie: cookiesStore.toString() },
+          headers: {
+            Cookie: cookiesStore.toString(),
+          },
         });
+
         const isAuth = setServerCookies(response, authRes);
+
         if (isAuth) return response;
+
         return NextResponse.next();
       } catch {
         return NextResponse.next();
@@ -73,4 +100,6 @@ export async function proxy(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ['/profile/:path*', '/notes/:path*', '/sign-in', '/sign-up'] };
+export const config = {
+  matcher: ['/profile/:path*', '/notes/:path*', '/sign-in', '/sign-up'],
+};
