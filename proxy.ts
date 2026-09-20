@@ -20,10 +20,16 @@ const setServerCookies = (
   for (const cookieStr of cookieArray) {
     const parsed = parseSetCookie(cookieStr);
 
+    if (parsed.value === undefined) {
+      continue;
+    }
+
     response.cookies.set(parsed.name, parsed.value, {
       expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
       path: parsed.Path || '/',
-      maxAge: parsed['Max-Age'] ? Number(parsed['Max-Age']) : undefined,
+      maxAge: parsed['Max-Age']
+        ? Number(parsed['Max-Age'])
+        : undefined,
     });
   }
 
@@ -34,14 +40,17 @@ export async function proxy(req: NextRequest) {
   const { pathname, origin } = req.nextUrl;
 
   const isPrivate = privateRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + '/')
+    (route) =>
+      pathname === route || pathname.startsWith(route + '/')
   );
 
   const isPublic = publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + '/')
+    (route) =>
+      pathname === route || pathname.startsWith(route + '/')
   );
 
   const cookiesStore = await cookies();
+
   const accessToken = cookiesStore.get('accessToken')?.value;
   const refreshToken = cookiesStore.get('refreshToken')?.value;
 
@@ -51,44 +60,50 @@ export async function proxy(req: NextRequest) {
         try {
           const authRes = await checkSession();
 
-          const response = NextResponse.next({
-            headers: {
-              Cookie: cookiesStore.toString(),
-            },
-          });
+          const response = NextResponse.next();
 
           const isAuth = setServerCookies(response, authRes);
 
-          if (isAuth) return response;
+          if (isAuth) {
+            return response;
+          }
 
-          return NextResponse.redirect(new URL('/sign-in', origin));
+          return NextResponse.redirect(
+            new URL('/sign-in', origin)
+          );
         } catch {
-          return NextResponse.redirect(new URL('/sign-in', origin));
+          return NextResponse.redirect(
+            new URL('/sign-in', origin)
+          );
         }
       }
 
-      return NextResponse.redirect(new URL('/sign-in', origin));
+      return NextResponse.redirect(
+        new URL('/sign-in', origin)
+      );
     }
   }
 
   if (isPublic) {
     if (accessToken) {
-      return NextResponse.redirect(new URL('/', origin));
+      return NextResponse.redirect(
+        new URL('/', origin)
+      );
     }
 
     if (refreshToken) {
       try {
         const authRes = await checkSession();
 
-        const response = NextResponse.redirect(new URL('/', origin), {
-          headers: {
-            Cookie: cookiesStore.toString(),
-          },
-        });
+        const response = NextResponse.redirect(
+          new URL('/', origin)
+        );
 
         const isAuth = setServerCookies(response, authRes);
 
-        if (isAuth) return response;
+        if (isAuth) {
+          return response;
+        }
 
         return NextResponse.next();
       } catch {
@@ -101,5 +116,10 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/profile/:path*', '/notes/:path*', '/sign-in', '/sign-up'],
+  matcher: [
+    '/profile/:path*',
+    '/notes/:path*',
+    '/sign-in',
+    '/sign-up',
+  ],
 };
