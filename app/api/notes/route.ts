@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     if (isAxiosError(error)) {
       logErrorResponse(error.response?.data);
       return NextResponse.json(
-        { error: error.response?.data?.error ?? error.response?.data?.message ?? error.message },
+        { error: error.message, response: error.response?.data },
         { status: error.status }
       );
     }
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (isAxiosError(error)) {
       logErrorResponse(error.response?.data);
       return NextResponse.json(
-        { error: error.response?.data?.error ?? error.response?.data?.message ?? error.message },
+        { error: error.message, response: error.response?.data },
         { status: error.status }
       );
     }

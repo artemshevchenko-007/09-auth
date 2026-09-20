@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { parse } from 'cookie';
+import { parseSetCookie } from 'cookie';
 import { AxiosResponse } from 'axios';
 import { checkSession } from './lib/api/serverApi';
 
@@ -13,7 +13,7 @@ const setServerCookies = (response: NextResponse, axiosRes: AxiosResponse): bool
 
   const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
   for (const cookieStr of cookieArray) {
-    const parsed = parse(cookieStr);
+    const parsed = parseSetCookie(cookieStr);
     const options = {
       expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
       path: parsed.Path || '/',
